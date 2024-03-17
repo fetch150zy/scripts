@@ -1,0 +1,47 @@
+#! /usr/bin/bash
+
+run_simulation() {
+    # 检查是否提供了足够的参数
+    if [ "$#" -lt 1 ]; then
+        echo "Usage: bash $0 [VerilogFiles...]"
+        exit 1
+    fi
+
+    # 所有待仿真文件
+    VERILOG_FILES=""
+    for file in "${@:1}"; do
+        VERILOG_FILES+="$file "
+    done
+
+    # 测试文件
+    TESTBENCH="testbench.cpp"
+
+    verilator -Wall --cc $VERILOG_FILES --exe $TESTBENCH --trace --prefix Vsim_module && \
+    bear -- make -C obj_dir -f Vsim_module.mk Vsim_module && \
+    ./obj_dir/Vsim_module > sim.output
+}
+
+clean_up() {
+    echo "Cleaning up..."
+    rm -rf obj_dir && \
+    rm sim.output && \
+    rm compile_commands.json && \
+    rm trace.vcd
+    echo "Clean up done!"
+}
+
+case $1 in
+    run)
+        shift
+        run_simulation "$@"
+        ;;
+    clean)
+        clean_up
+        ;;
+    *)
+        echo "Unknown command: $1"
+        echo "Usage: bash $0 {run|clean}"
+        exit 1
+        ;;
+esac
+
